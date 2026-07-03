@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create your account — Marketed.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="auth-shell">
+  <div class="auth-card">
+    <a href="/index.html" class="wordmark">Marketed.</a>
+    <h2>Create your account</h2>
+    <p class="section-copy" style="font-size:0.9rem;">Sign up once — you'll stay signed in on this device.</p>
+
+    <form id="signup-form">
+      <div class="form-row"><label for="name">Full name</label><input type="text" id="name" required></div>
+      <div class="form-row"><label for="email">Email</label><input type="email" id="email" required></div>
+      <div class="form-row"><label for="company">Company (optional)</label><input type="text" id="company"></div>
+      <div class="form-row"><label for="phone">Phone (optional)</label><input type="tel" id="phone"></div>
+      <div class="form-row"><label for="password">Password</label><input type="password" id="password" minlength="8" required></div>
+      <button type="submit" class="btn btn-primary">Create account</button>
+      <p class="form-status" id="status" role="status" aria-live="polite"></p>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="/login.html">Log in</a></p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const status = document.getElementById('status');
+  status.textContent = ''; status.dataset.state = '';
+  try {
+    await api('/api/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: document.getElementById('name').value,
+        email: document.getElementById('email').value,
+        company: document.getElementById('company').value,
+        phone: document.getElementById('phone').value,
+        password: document.getElementById('password').value,
+      }),
+    });
+    window.location.href = '/dashboard.html';
+  } catch (err) {
+    status.textContent = err.message;
+    status.dataset.state = 'error';
+  }
+});
+</script>
+</body>
+</html>

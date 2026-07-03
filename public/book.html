@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a discovery call — Marketed.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a href="/index.html" class="wordmark">Marketed.</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <a href="/book.html" class="active">Book a call</a>
+    <div class="sidebar-footer"><a href="#" id="logout-link">Log out</a></div>
+  </aside>
+
+  <main class="app-main">
+    <h1>Book your discovery call</h1>
+    <p class="page-sub">Pick a time. You'll get a confirmation email with a join link and a calendar file.</p>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Available times (next 14 days)</h3></div>
+      <div id="slots" class="slot-grid"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Anything we should know beforehand?</h3></div>
+      <div class="form-row">
+        <textarea id="notes" rows="4" placeholder="Current channels, goals, timeline…" style="background:var(--bg-panel-raised);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);padding:0.65rem 0.75rem;font-family:var(--font-body);"></textarea>
+      </div>
+      <button class="btn btn-primary" id="confirm-btn" disabled>Confirm booking</button>
+      <p class="form-status" id="status" role="status" aria-live="polite"></p>
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+<script>
+let selectedSlot = null;
+const params = new URLSearchParams(window.location.search);
+const serviceKey = params.get('service') || null;
+
+async function loadSlots() {
+  const { slots } = await api('/api/bookings/availability');
+  const el = document.getElementById('slots');
+  if (!slots.length) {
+    el.innerHTML = '<p class="empty-state">No open slots right now — check back soon.</p>';
+    return;
+  }
+  el.innerHTML = slots.slice(0, 60).map((s, i) => `
+    <button class="slot-btn" data-index="${i}" data-start="${s.start}" data-end="${s.end}">
+      ${new Date(s.start).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+    </button>
+  `).join('');
+
+  el.querySelectorAll('.slot-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      el.querySelectorAll('.slot-btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedSlot = { start: btn.dataset.start, end: btn.dataset.end };
+      document.getElementById('confirm-btn').disabled = false;
+    });
+  });
+}
+
+document.getElementById('confirm-btn').addEventListener('click', async () => {
+  const status = document.getElementById('status');
+  status.textContent = ''; status.dataset.state = '';
+  if (!selectedSlot) return;
+
+  try {
+    const { booking } = await api('/api/bookings', {
+      method: 'POST',
+      body: JSON.stringify({
+        start: selectedSlot.start,
+        end: selectedSlot.end,
+        related_service_key: serviceKey,
+        notes: document.getElementById('notes').value,
+      }),
+    });
+    status.dataset.state = 'success';
+    status.textContent = booking.meetingLink
+      ? `Booked. Join link: ${booking.meetingLink}`
+      : 'Booked — your join link is on its way by email.';
+    document.getElementById('confirm-btn').disabled = true;
+  } catch (err) {
+    status.dataset.state = 'error';
+    status.textContent = err.message;
+  }
+});
+
+document.getElementById('logout-link').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+
+(async () => {
+  const user = await requireSession({ role: 'client' });
+  if (!user) return;
+  await loadSlots();
+})();
+</script>
+</body>
+</html>

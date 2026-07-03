@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage client — Marketed.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a href="/index.html" class="wordmark">Marketed.</a>
+    <a href="/admin/index.html">← All clients</a>
+    <div class="sidebar-footer"><a href="#" id="logout-link">Log out</a></div>
+  </aside>
+
+  <main class="app-main">
+    <h1 id="client-name">Loading…</h1>
+    <p class="page-sub" id="client-meta"></p>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Assign a service</h3></div>
+      <p class="section-copy" style="font-size:0.9rem;">Use this after the discovery call to activate what the client is paying for.</p>
+      <div class="inline-form" id="assign-service-form">
+        <div class="form-row">
+          <label for="service-select">Service</label>
+          <select id="service-select"></select>
+        </div>
+        <div class="form-row">
+          <label for="price-note">Price note</label>
+          <input type="text" id="price-note" placeholder="Overrides catalog default">
+        </div>
+        <button class="btn btn-primary btn-sm" id="assign-btn">Assign</button>
+      </div>
+      <div id="services-table" style="margin-top:1rem;"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Channels &amp; integrations</h3></div>
+      <p class="section-copy" style="font-size:0.9rem;">Add a channel with its API key/credentials — the dashboard starts pulling live metrics automatically. See README for what each channel type expects.</p>
+      <div class="inline-form">
+        <div class="form-row">
+          <label for="channel-type">Channel</label>
+          <select id="channel-type">
+            <option value="google_ads">Google Ads</option>
+            <option value="meta_ads">Meta Ads</option>
+            <option value="klaviyo">Klaviyo (Email)</option>
+            <option value="semrush">SEMrush (SEO)</option>
+            <option value="adroll">AdRoll (Retargeting)</option>
+            <option value="webhook">Custom webhook</option>
+          </select>
+        </div>
+        <div class="form-row"><label for="channel-label">Label</label><input type="text" id="channel-label" placeholder="e.g. Main ad account"></div>
+        <div class="form-row" style="flex:1;min-width:260px;">
+          <label for="channel-creds">Credentials (JSON)</label>
+          <input type="text" id="channel-creds" placeholder='{"apiKey":"...", ...}'>
+        </div>
+        <button class="btn btn-primary btn-sm" id="add-channel-btn">Add &amp; sync</button>
+      </div>
+      <div id="channels-table" style="margin-top:1rem;"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Bookings</h3></div>
+      <div id="bookings-table"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Send an email</h3>
+      </div>
+      <div class="inline-form">
+        <div class="form-row" style="flex:1;"><label for="msg-subject">Subject</label><input type="text" id="msg-subject"></div>
+      </div>
+      <div class="form-row" style="margin-top:0.6rem;">
+        <label for="msg-body">Message</label>
+        <textarea id="msg-body" rows="3" style="background:var(--bg-panel-raised);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-primary);padding:0.65rem 0.75rem;"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" id="send-msg-btn" style="margin-top:0.6rem;">Send</button>
+      <div id="messages-table" style="margin-top:1rem;"></div>
+    </div>
+  </main>
+</div>
+
+<script src="/app.js"></script>
+<script>
+const clientId = new URLSearchParams(window.location.search).get('id');
+let clientEmail = '';
+
+async function loadServiceOptions() {
+  const { services } = await api('/api/services');
+  document.getElementById('service-select').innerHTML = services
+    .map((s) => `<option value="${s.key}">${escapeHTML(s.name)} (${s.complexity})</option>`)
+    .join('');
+}
+
+async function loadClient() {
+  const data = await api(`/api/admin/clients/${clientId}`);
+  clientEmail = data.client.email;
+  document.getElementById('client-name').textContent = data.client.name;
+  document.getElementById('client-meta').textContent = `${data.client.email} · ${data.client.company || 'no company listed'} · joined ${fmtDate(data.client.created_at)}`;
+
+  document.getElementById('services-table').innerHTML = data.services.length ? `
+    <table class="data-table">
+      <thead><tr><th>Service</th><th>Status</th><th>Price note</th><th>Since</th><th></th></tr></thead>
+      <tbody>
+        ${data.services.map((s) => `
+          <tr>
+            <td>${escapeHTML(s.service_key)}</td>
+            <td>${badge(s.status)}</td>
+            <td class="mono">${escapeHTML(s.price_note || '')}</td>
+            <td>${fmtDate(s.started_at)}</td>
+            <td>
+              ${s.status === 'active' ? `<button class="btn btn-ghost btn-sm" data-pause="${s.id}">Pause</button> <button class="btn btn-danger btn-sm" data-cancel-service="${s.id}">Cancel</button>`
+                : s.status === 'paused' ? `<button class="btn btn-ghost btn-sm" data-activate="${s.id}">Reactivate</button>` : ''}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>` : '<p class="empty-state">No services assigned yet.</p>';
+
+  bindServiceActions();
+
+  document.getElementById('channels-table').innerHTML = data.channels.length ? `
+    <table class="data-table">
+      <thead><tr><th>Type</th><th>Label</th><th>Status</th><th>Last synced</th><th></th></tr></thead>
+      <tbody>
+        ${data.channels.map((c) => `
+          <tr>
+            <td>${escapeHTML(c.channel_type)}</td>
+            <td>${escapeHTML(c.label)}</td>
+            <td>${badge(c.status)}${c.last_error ? `<div style="color:#E07A5F;font-size:0.75rem;margin-top:0.2rem;">${escapeHTML(c.last_error)}</div>` : ''}</td>
+            <td>${fmtDate(c.last_synced_at)}</td>
+            <td><button class="btn btn-ghost btn-sm" data-sync="${c.id}">Sync now</button> <button class="btn btn-danger btn-sm" data-remove-channel="${c.id}">Remove</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>` : '<p class="empty-state">No channels connected yet.</p>';
+
+  bindChannelActions();
+
+  document.getElementById('bookings-table').innerHTML = data.bookings.length ? `
+    <table class="data-table">
+      <thead><tr><th>When</th><th>Status</th><th>Join link</th></tr></thead>
+      <tbody>
+        ${data.bookings.map((b) => `
+          <tr><td>${fmtDate(b.start_time)}</td><td>${badge(b.status)}</td><td>${b.meeting_link ? `<a href="${escapeHTML(b.meeting_link)}" target="_blank">Join</a>` : '—'}</td></tr>
+        `).join('')}
+      </tbody>
+    </table>` : '<p class="empty-state">No bookings yet.</p>';
+
+  document.getElementById('messages-table').innerHTML = data.messages.length ? `
+    <table class="data-table">
+      <thead><tr><th>Subject</th><th>Sent</th></tr></thead>
+      <tbody>${data.messages.map((m) => `<tr><td>${escapeHTML(m.subject)}</td><td>${fmtDate(m.sent_at)}</td></tr>`).join('')}</tbody>
+    </table>` : '<p class="empty-state">No emails sent yet.</p>';
+}
+
+function bindServiceActions() {
+  document.querySelectorAll('button[data-pause]').forEach((btn) => btn.addEventListener('click', async () => {
+    await api(`/api/admin/clients/${clientId}/services/${btn.dataset.pause}`, { method: 'PATCH', body: JSON.stringify({ status: 'paused' }) });
+    loadClient();
+  }));
+  document.querySelectorAll('button[data-activate]').forEach((btn) => btn.addEventListener('click', async () => {
+    await api(`/api/admin/clients/${clientId}/services/${btn.dataset.activate}`, { method: 'PATCH', body: JSON.stringify({ status: 'active' }) });
+    loadClient();
+  }));
+  document.querySelectorAll('button[data-cancel-service]').forEach((btn) => btn.addEventListener('click', async () => {
+    if (!confirm('Cancel this service?')) return;
+    await api(`/api/admin/clients/${clientId}/services/${btn.dataset.cancelService}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) });
+    loadClient();
+  }));
+}
+
+function bindChannelActions() {
+  document.querySelectorAll('button[data-sync]').forEach((btn) => btn.addEventListener('click', async () => {
+    await api(`/api/metrics/${btn.dataset.sync}/sync-now`, { method: 'POST' });
+    loadClient();
+  }));
+  document.querySelectorAll('button[data-remove-channel]').forEach((btn) => btn.addEventListener('click', async () => {
+    if (!confirm('Remove this channel and its metric history?')) return;
+    await api(`/api/admin/clients/${clientId}/channels/${btn.dataset.removeChannel}`, { method: 'DELETE' });
+    loadClient();
+  }));
+}
+
+document.getElementById('assign-btn').addEventListener('click', async () => {
+  try {
+    await api(`/api/admin/clients/${clientId}/services`, {
+      method: 'POST',
+      body: JSON.stringify({
+        service_key: document.getElementById('service-select').value,
+        price_note: document.getElementById('price-note').value,
+      }),
+    });
+    document.getElementById('price-note').value = '';
+    loadClient();
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('add-channel-btn').addEventListener('click', async () => {
+  let credentials;
+  try {
+    credentials = JSON.parse(document.getElementById('channel-creds').value || '{}');
+  } catch {
+    alert('Credentials must be valid JSON, e.g. {"apiKey":"..."}');
+    return;
+  }
+  try {
+    await api(`/api/admin/clients/${clientId}/channels`, {
+      method: 'POST',
+      body: JSON.stringify({
+        channel_type: document.getElementById('channel-type').value,
+        label: document.getElementById('channel-label').value,
+        credentials,
+      }),
+    });
+    document.getElementById('channel-label').value = '';
+    document.getElementById('channel-creds').value = '';
+    loadClient();
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('send-msg-btn').addEventListener('click', async () => {
+  const subject = document.getElementById('msg-subject').value;
+  const body = document.getElementById('msg-body').value;
+  if (!subject || !body) return alert('Subject and message are required.');
+  try {
+    await api('/api/admin/messages', { method: 'POST', body: JSON.stringify({ to: clientEmail, subject, body, clientId }) });
+    document.getElementById('msg-subject').value = '';
+    document.getElementById('msg-body').value = '';
+    loadClient();
+  } catch (err) { alert(err.message); }
+});
+
+document.getElementById('logout-link').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+
+(async () => {
+  const user = await requireSession({ role: 'admin' });
+  if (!user) return;
+  if (!clientId) { document.getElementById('client-name').textContent = 'No client selected.'; return; }
+  await Promise.all([loadServiceOptions(), loadClient()]);
+})();
+</script>
+</body>
+</html>

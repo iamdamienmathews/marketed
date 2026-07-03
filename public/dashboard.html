@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Marketed.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a href="/index.html" class="wordmark">Marketed.</a>
+    <a href="/dashboard.html" class="active">Dashboard</a>
+    <a href="/book.html">Book a call</a>
+    <div class="sidebar-footer">
+      <a href="#" id="logout-link">Log out</a>
+    </div>
+  </aside>
+
+  <main class="app-main">
+    <h1 id="greeting">Your dashboard</h1>
+    <p class="page-sub">Every channel you're subscribed to, in one read-out.</p>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Explore services</h3></div>
+      <p class="section-copy" style="font-size:0.9rem;">Simple services can be added instantly. Complex, multi-channel strategies need a quick discovery call first — we'll route you there automatically.</p>
+      <div id="services-catalog" class="card-grid" style="margin-top:1rem;"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Your active services</h3></div>
+      <div id="my-services"><p class="empty-state">Loading…</p></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3><span class="live-dot"></span>Live channel performance</h3>
+        <button class="btn btn-ghost btn-sm" id="refresh-metrics">Refresh</button>
+      </div>
+      <div id="metrics" class="metric-grid"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Discovery calls</h3></div>
+      <div id="bookings"><p class="empty-state">Loading…</p></div>
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
+<script>
+let currentUser = null;
+
+async function loadServicesCatalog() {
+  const { services } = await api('/api/services');
+  const el = document.getElementById('services-catalog');
+  el.innerHTML = services.map((s) => `
+    <div class="card">
+      <h3>${escapeHTML(s.name)} ${badge(s.complexity)}</h3>
+      <p>${escapeHTML(s.description)}</p>
+      <p class="price mono">${escapeHTML(s.price_note)}</p>
+      <button class="btn btn-primary btn-sm" data-service="${s.key}">Register interest</button>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('button[data-service]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const key = btn.dataset.service;
+      try {
+        const result = await api('/api/interests', { method: 'POST', body: JSON.stringify({ service_key: key }) });
+        if (result.requiresDiscoveryCall) {
+          alert("This service needs a quick discovery call first — we'll take you to booking now.");
+          window.location.href = `/book.html?service=${key}`;
+        } else {
+          alert("Got it — we've logged your interest and will set this up shortly.");
+        }
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+async function loadMyServices() {
+  const { services } = await api('/api/clients/me/services');
+  const el = document.getElementById('my-services');
+  if (!services.length) {
+    el.innerHTML = '<p class="empty-state">No active services yet — register interest above or book a discovery call.</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Service</th><th>Status</th><th>Pricing</th><th>Since</th><th></th></tr></thead>
+      <tbody>
+        ${services.map((s) => `
+          <tr>
+            <td>${escapeHTML(s.service_name)}</td>
+            <td>${badge(s.status)}</td>
+            <td class="mono">${escapeHTML(s.price_note || '')}</td>
+            <td>${fmtDate(s.started_at)}</td>
+            <td>${s.status === 'active' ? `<button class="btn btn-danger btn-sm" data-cancel="${s.id}">Request cancellation</button>` : ''}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  el.querySelectorAll('button[data-cancel]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const reason = prompt('Optional: tell us why you want to cancel.');
+      try {
+        await api(`/api/clients/me/services/${btn.dataset.cancel}/cancel`, { method: 'POST', body: JSON.stringify({ reason }) });
+        alert("Cancellation requested — we'll follow up by email.");
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+  });
+}
+
+async function loadMetrics() {
+  const { channels } = await api('/api/metrics/latest');
+  const el = document.getElementById('metrics');
+  if (!channels.length) {
+    el.innerHTML = '<p class="metric-empty">No channels connected yet. Once your discovery call is done and services are assigned, your channel data will show up here automatically.</p>';
+    return;
+  }
+  el.innerHTML = channels.map((c) => `
+    <div class="metric-card">
+      <div class="metric-head"><h4>${escapeHTML(c.label)}</h4>${badge(c.status)}</div>
+      ${Object.keys(c.metrics).length
+        ? Object.entries(c.metrics).map(([k, v]) => `<div class="metric-row"><span>${escapeHTML(k.replace('_',' '))}</span><strong>${typeof v === 'number' ? v.toLocaleString(undefined,{maximumFractionDigits:2}) : v}</strong></div>`).join('')
+        : `<p class="metric-empty">${c.lastError ? escapeHTML(c.lastError) : 'Waiting on first sync…'}</p>`}
+    </div>
+  `).join('');
+}
+
+function streamMetrics() {
+  const source = new EventSource('/api/metrics/stream');
+  source.onmessage = () => loadMetrics();
+}
+
+async function loadBookings() {
+  const { bookings } = await api('/api/bookings/mine');
+  const el = document.getElementById('bookings');
+  if (!bookings.length) {
+    el.innerHTML = '<p class="empty-state">No discovery calls booked yet. <a href="/book.html">Book one</a>.</p>';
+    return;
+  }
+  el.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>When</th><th>Status</th><th>Join link</th><th>Calendar</th></tr></thead>
+      <tbody>
+        ${bookings.map((b) => `
+          <tr>
+            <td>${fmtDate(b.start_time)}</td>
+            <td>${badge(b.status)}</td>
+            <td>${b.meeting_link ? `<a href="${escapeHTML(b.meeting_link)}" target="_blank">Join</a>` : 'Sent by email'}</td>
+            <td><a href="/api/bookings/${b.id}/ics">Add to calendar (.ics)</a></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+document.getElementById('logout-link').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+document.getElementById('refresh-metrics').addEventListener('click', loadMetrics);
+
+(async () => {
+  currentUser = await requireSession({ role: 'client' });
+  if (!currentUser) return;
+  document.getElementById('greeting').textContent = `Welcome back, ${currentUser.name.split(' ')[0]}`;
+  await Promise.all([loadServicesCatalog(), loadMyServices(), loadMetrics(), loadBookings()]);
+  streamMetrics();
+})();
+</script>
+</body>
+</html>

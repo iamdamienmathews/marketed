@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Marketed.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <a href="/index.html" class="wordmark">Marketed.</a>
+    <a href="/admin/index.html" class="active">Admin</a>
+    <div class="sidebar-footer"><a href="#" id="logout-link">Log out</a></div>
+  </aside>
+
+  <main class="app-main">
+    <h1>Admin console</h1>
+    <p class="page-sub" id="google-status"></p>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Clients</h3></div>
+      <div id="clients"><p class="empty-state">Loading…</p></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Leads (quick inquiries)</h3></div>
+      <div id="leads"><p class="empty-state">Loading…</p></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Discovery calls</h3></div>
+      <div id="bookings"><p class="empty-state">Loading…</p></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><h3>Cancellation requests</h3></div>
+      <div id="cancellations"><p class="empty-state">Loading…</p></div>
+    </div>
+  </main>
+</div>
+
+<script src="/app.js"></script>
+<script>
+async function loadGoogleStatus() {
+  const { configured, connected } = await api('/api/calendar/google/status');
+  const el = document.getElementById('google-status');
+  if (!configured) {
+    el.innerHTML = 'Google Calendar isn\'t configured yet — add GOOGLE_CLIENT_ID/SECRET to .env to enable auto Meet links.';
+  } else if (!connected) {
+    el.innerHTML = '<a href="/api/calendar/google/connect">Connect your Google Calendar</a> to auto-create Meet links for bookings.';
+  } else {
+    el.innerHTML = 'Google Calendar connected. ✓';
+  }
+}
+
+async function loadClients() {
+  const { clients } = await api('/api/admin/clients');
+  const el = document.getElementById('clients');
+  if (!clients.length) { el.innerHTML = '<p class="empty-state">No clients yet.</p>'; return; }
+  el.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Email</th><th>Company</th><th>Active services</th><th>Upcoming calls</th><th>Joined</th><th></th></tr></thead>
+      <tbody>
+        ${clients.map((c) => `
+          <tr>
+            <td>${escapeHTML(c.name)}</td>
+            <td>${escapeHTML(c.email)}</td>
+            <td>${escapeHTML(c.company || '—')}</td>
+            <td>${c.active_services}</td>
+            <td>${c.upcoming_bookings}</td>
+            <td>${fmtDate(c.created_at)}</td>
+            <td><a href="/admin/client.html?id=${c.id}">Manage →</a></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function loadLeads() {
+  const { leads } = await api('/api/admin/leads');
+  const el = document.getElementById('leads');
+  if (!leads.length) { el.innerHTML = '<p class="empty-state">No leads yet.</p>'; return; }
+  el.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Contact</th><th>Interested in</th><th>Message</th><th>Status</th><th>Received</th><th></th></tr></thead>
+      <tbody>
+        ${leads.map((l) => `
+          <tr>
+            <td>${escapeHTML(l.name)}${l.company ? ` <span style="color:var(--text-muted)">(${escapeHTML(l.company)})</span>` : ''}</td>
+            <td>${escapeHTML(l.email)}${l.phone ? `<br>${escapeHTML(l.phone)}` : ''}</td>
+            <td>${(l.services || []).map((s) => escapeHTML(s)).join(', ') || '—'}</td>
+            <td style="max-width:240px;">${escapeHTML(l.message).slice(0, 120)}${l.message.length > 120 ? '…' : ''}</td>
+            <td>
+              <select data-lead-status="${l.id}">
+                ${['new','contacted','converted','lost'].map((s) => `<option value="${s}" ${s === l.status ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            </td>
+            <td>${fmtDate(l.created_at)}</td>
+            <td><button class="btn btn-ghost btn-sm" data-email-lead="${l.id}" data-email-to="${escapeHTML(l.email)}">Email</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  el.querySelectorAll('select[data-lead-status]').forEach((sel) => {
+    sel.addEventListener('change', async () => {
+      await api(`/api/admin/leads/${sel.dataset.leadStatus}`, { method: 'PATCH', body: JSON.stringify({ status: sel.value }) });
+    });
+  });
+  el.querySelectorAll('button[data-email-lead]').forEach((btn) => {
+    btn.addEventListener('click', () => sendQuickEmail(btn.dataset.emailTo, { leadId: btn.dataset.emailLead }));
+  });
+}
+
+async function loadBookings() {
+  const { bookings } = await api('/api/admin/bookings');
+  const el = document.getElementById('bookings');
+  if (!bookings.length) { el.innerHTML = '<p class="empty-state">No bookings yet.</p>'; return; }
+  el.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Client</th><th>When</th><th>Status</th><th>Join link</th><th></th></tr></thead>
+      <tbody>
+        ${bookings.map((b) => `
+          <tr>
+            <td>${escapeHTML(b.client_name)}<br><span style="color:var(--text-muted);font-size:0.8rem;">${escapeHTML(b.client_email)}</span></td>
+            <td>${fmtDate(b.start_time)}</td>
+            <td>${badge(b.status)}</td>
+            <td>${b.meeting_link ? `<a href="${escapeHTML(b.meeting_link)}" target="_blank">Join</a>` : '—'}</td>
+            <td>
+              ${b.status === 'scheduled' ? `<button class="btn btn-ghost btn-sm" data-complete="${b.id}">Mark complete</button>
+              <button class="btn btn-danger btn-sm" data-cancel-booking="${b.id}">Cancel</button>` : ''}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  el.querySelectorAll('button[data-complete]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await api(`/api/admin/bookings/${btn.dataset.complete}`, { method: 'PATCH', body: JSON.stringify({ status: 'completed' }) });
+      loadBookings();
+    });
+  });
+  el.querySelectorAll('button[data-cancel-booking]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await api(`/api/admin/bookings/${btn.dataset.cancelBooking}`, { method: 'PATCH', body: JSON.stringify({ status: 'cancelled' }) });
+      loadBookings();
+    });
+  });
+}
+
+async function loadCancellations() {
+  const { cancellations } = await api('/api/admin/cancellations');
+  const el = document.getElementById('cancellations');
+  const open = cancellations.filter((c) => c.status === 'open');
+  if (!open.length) { el.innerHTML = '<p class="empty-state">No open cancellation requests.</p>'; return; }
+  el.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Client</th><th>Service</th><th>Reason</th><th>Requested</th><th></th></tr></thead>
+      <tbody>
+        ${open.map((c) => `
+          <tr>
+            <td>${escapeHTML(c.client_name)}<br><span style="color:var(--text-muted);font-size:0.8rem;">${escapeHTML(c.client_email)}</span></td>
+            <td>${escapeHTML(c.service_key)}</td>
+            <td>${escapeHTML(c.reason || '—')}</td>
+            <td>${fmtDate(c.created_at)}</td>
+            <td><button class="btn btn-ghost btn-sm" data-resolve="${c.id}">Mark resolved</button></td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  el.querySelectorAll('button[data-resolve]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      await api(`/api/admin/cancellations/${btn.dataset.resolve}`, { method: 'PATCH', body: JSON.stringify({ status: 'resolved' }) });
+      loadCancellations();
+    });
+  });
+}
+
+async function sendQuickEmail(to, { leadId, clientId } = {}) {
+  const subject = prompt(`Subject for email to ${to}:`);
+  if (!subject) return;
+  const body = prompt('Message:');
+  if (!body) return;
+  try {
+    await api('/api/admin/messages', { method: 'POST', body: JSON.stringify({ to, subject, body, leadId, clientId }) });
+    alert('Sent.');
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById('logout-link').addEventListener('click', (e) => { e.preventDefault(); logout(); });
+
+(async () => {
+  const user = await requireSession({ role: 'admin' });
+  if (!user) return;
+  await Promise.all([loadGoogleStatus(), loadClients(), loadLeads(), loadBookings(), loadCancellations()]);
+})();
+</script>
+</body>
+</html>

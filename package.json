@@ -1,0 +1,23 @@
+{
+  "name": "marketed-platform",
+  "version": "1.0.0",
+  "description": "Marketed.: client + admin marketing platform (auth, bookings, CRM, live channel dashboards).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.10.0",
+    "connect-sqlite3": "^0.9.13",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "google-ads-api": "^24.1.0",
+    "googleapis": "^140.0.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.14"
+  }
+}
