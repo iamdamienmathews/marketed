@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="app-shell">
   <aside class="app-sidebar">
     <a href="/index.html" class="wordmark">Marketed.</a>
@@ -18,19 +19,19 @@
     </div>
   </aside>
 
-  <main class="app-main">
+  <main class="app-main" id="main-content">
     <h1 id="greeting">Your dashboard</h1>
     <p class="page-sub">Every channel you're subscribed to, in one read-out.</p>
 
     <div class="panel">
       <div class="panel-head"><h3>Explore services</h3></div>
       <p class="section-copy" style="font-size:0.9rem;">Simple services can be added instantly. Complex, multi-channel strategies need a quick discovery call first — we'll route you there automatically.</p>
-      <div id="services-catalog" class="card-grid" style="margin-top:1rem;"></div>
+      <div id="services-catalog" style="margin-top:1rem;"><div class="card-grid" aria-hidden="true"><div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-40"></div></div><div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-40"></div></div><div class="skeleton-card"><div class="skeleton skeleton-line w-60"></div><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-40"></div></div></div><span class="visually-hidden" role="status">Loading…</span></div>
     </div>
 
     <div class="panel">
       <div class="panel-head"><h3>Your active services</h3></div>
-      <div id="my-services"><p class="empty-state">Loading…</p></div>
+      <div id="my-services"><div aria-hidden="true"><div class="skeleton-row"><div class="skeleton" style="width:28%"></div><div class="skeleton" style="width:18%"></div><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:14%"></div></div><div class="skeleton-row"><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:26%"></div><div class="skeleton" style="width:16%"></div><div class="skeleton" style="width:20%"></div></div><div class="skeleton-row"><div class="skeleton" style="width:32%"></div><div class="skeleton" style="width:14%"></div><div class="skeleton" style="width:24%"></div><div class="skeleton" style="width:12%"></div></div></div><span class="visually-hidden" role="status">Loading…</span></div>
     </div>
 
     <div class="panel">
@@ -43,7 +44,7 @@
 
     <div class="panel">
       <div class="panel-head"><h3>Discovery calls</h3></div>
-      <div id="bookings"><p class="empty-state">Loading…</p></div>
+      <div id="bookings"><div aria-hidden="true"><div class="skeleton-row"><div class="skeleton" style="width:28%"></div><div class="skeleton" style="width:18%"></div><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:14%"></div></div><div class="skeleton-row"><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:26%"></div><div class="skeleton" style="width:16%"></div><div class="skeleton" style="width:20%"></div></div><div class="skeleton-row"><div class="skeleton" style="width:32%"></div><div class="skeleton" style="width:14%"></div><div class="skeleton" style="width:24%"></div><div class="skeleton" style="width:12%"></div></div></div><span class="visually-hidden" role="status">Loading…</span></div>
     </div>
   </main>
 </div>

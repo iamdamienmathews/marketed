@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="app-shell">
   <aside class="app-sidebar">
     <a href="/index.html" class="wordmark">Marketed.</a>
@@ -16,13 +17,13 @@
     <div class="sidebar-footer"><a href="#" id="logout-link">Log out</a></div>
   </aside>
 
-  <main class="app-main">
+  <main class="app-main" id="main-content">
     <h1>Book your discovery call</h1>
     <p class="page-sub">Pick a time. You'll get a confirmation email with a join link and a calendar file.</p>
 
     <div class="panel">
       <div class="panel-head"><h3>Available times (next 14 days)</h3></div>
-      <div id="slots" class="slot-grid"></div>
+      <div id="slots"><div class="slot-grid" aria-hidden="true"><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div><div class="skeleton" style="height:2.4rem;"></div></div><span class="visually-hidden" role="status">Loading available times…</span></div>
     </div>
 
     <div class="panel">

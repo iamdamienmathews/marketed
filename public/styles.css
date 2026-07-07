@@ -1,19 +1,25 @@
 /* ---------------------------------------------
    Marketed. — design tokens
    Concept: an instrument panel that consolidates
-   five separate readouts into one. Deep ink-blue,
-   not near-black; dual accent (amber + teal),
+   five separate readouts into one. Warm graphite,
+   not blue-tinted ink; dual accent (amber + sage),
    not a single neon; soft 6px radius, not zero.
+
+   --accent-teal is kept as a variable NAME for
+   historical reasons (it's referenced inline across
+   several pages) but now renders as a warm sage
+   green — no blue or purple anywhere in the palette.
 ---------------------------------------------- */
 :root {
-  --bg-ink: #0F1620;
-  --bg-panel: #17202C;
-  --bg-panel-raised: #1D2734;
-  --border: #2A3644;
-  --text-primary: #F2EFE7;
-  --text-muted: #8C98AC;
+  --bg-ink: #171310;
+  --bg-panel: #221D18;
+  --bg-panel-raised: #2B241D;
+  --border: #3D362C;
+  --text-primary: #F3EEE4;
+  --text-muted: #A69A87;
   --accent-amber: #E8A33D;
-  --accent-teal: #5FBFB3;
+  --accent-teal: #83A16B; /* sage green — see note above */
+  --accent-danger: #E07A5F;
 
   --font-display: "Space Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -21,6 +27,13 @@
 
   --radius: 6px;
   --max-width: 1120px;
+
+  /* Motion tokens (Emil Kowalski's design-engineering standards) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --duration-fast: 160ms;
+  --duration-base: 220ms;
+  --duration-slow: 400ms;
 }
 
 * { box-sizing: border-box; }
@@ -114,7 +127,7 @@ textarea:focus-visible {
   font-size: 0.92rem;
 }
 
-.nav-links a { text-decoration: none; color: var(--text-muted); }
+.nav-links a { text-decoration: none; color: var(--text-muted); transition: color var(--duration-fast) var(--ease-out); }
 .nav-links a:hover { color: var(--text-primary); }
 
 .nav-cta {
@@ -138,9 +151,12 @@ textarea:focus-visible {
   font-size: 0.98rem;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
 }
-.btn:hover { transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover { transform: translateY(-1px); }
+}
+.btn:active { transform: scale(0.97); }
 
 .btn-primary {
   background: var(--accent-amber);
@@ -204,7 +220,7 @@ textarea:focus-visible {
   border-radius: var(--radius);
   padding: 0.55rem 0.75rem;
   font-size: 0.72rem;
-  animation: settle 0.8s ease both;
+  animation: settle 0.8s var(--ease-out) both;
 }
 
 .chip-label { color: var(--text-muted); }
@@ -276,6 +292,11 @@ section:not(.hero) {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.5rem;
+  transition: border-color var(--duration-base) var(--ease-out), transform var(--duration-base) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover { border-color: var(--accent-teal); transform: translateY(-2px); }
 }
 
 .card p:not(.price) { color: var(--text-muted); font-size: 0.94rem; }
@@ -391,7 +412,7 @@ textarea { resize: vertical; }
   min-height: 1.2em;
 }
 .form-status[data-state="success"] { color: var(--accent-teal); }
-.form-status[data-state="error"] { color: #E07A5F; }
+.form-status[data-state="error"] { color: var(--accent-danger); }
 
 /* ---------------- FOOTER ---------------- */
 .footer {
@@ -406,6 +427,8 @@ textarea { resize: vertical; }
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+.footer-meta a { text-decoration: underline; text-underline-offset: 2px; }
+.footer-meta a:hover { color: var(--text-primary); }
 
 /* ---------------- RESPONSIVE ---------------- */
 @media (max-width: 860px) {
@@ -463,10 +486,10 @@ textarea { resize: vertical; }
 .data-table a { color: var(--accent-teal); text-decoration: none; }
 
 .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-family: var(--font-mono); }
-.badge-connected, .badge-active, .badge-completed, .badge-converted { background: rgba(95,191,179,0.15); color: var(--accent-teal); }
+.badge-connected, .badge-active, .badge-completed, .badge-converted { background: rgba(131,161,105,0.15); color: var(--accent-teal); }
 .badge-pending, .badge-scheduled, .badge-new { background: rgba(232,163,61,0.15); color: var(--accent-amber); }
-.badge-error, .badge-cancelled, .badge-lost { background: rgba(224,122,95,0.15); color: #E07A5F; }
-.badge-paused, .badge-contacted { background: rgba(140,152,172,0.2); color: var(--text-muted); }
+.badge-error, .badge-cancelled, .badge-lost { background: rgba(224,122,95,0.15); color: var(--accent-danger); }
+.badge-paused, .badge-contacted { background: rgba(166,154,135,0.2); color: var(--text-muted); }
 
 .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1.5rem; }
 .metric-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
@@ -484,7 +507,7 @@ textarea { resize: vertical; }
 .panel-head h3 { margin: 0; }
 
 .btn-sm { padding: 0.45rem 0.85rem; font-size: 0.85rem; }
-.btn-danger { background: transparent; border: 1px solid #E07A5F; color: #E07A5F; }
+.btn-danger { background: transparent; border: 1px solid var(--accent-danger); color: var(--accent-danger); }
 .btn-danger:hover { background: rgba(224,122,95,0.1); }
 
 .inline-form { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end; margin-top: 1rem; }
@@ -493,8 +516,9 @@ textarea { resize: vertical; }
 .inline-form input, .inline-form select { background: var(--bg-panel-raised); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 0.5rem 0.6rem; font-size: 0.88rem; }
 
 .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.6rem; margin-top: 1rem; }
-.slot-btn { background: var(--bg-panel-raised); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 0.6rem; font-family: var(--font-mono); font-size: 0.8rem; cursor: pointer; }
+.slot-btn { background: var(--bg-panel-raised); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-primary); padding: 0.6rem; font-family: var(--font-mono); font-size: 0.8rem; cursor: pointer; transition: border-color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out), transform var(--duration-fast) var(--ease-out); }
 .slot-btn:hover { border-color: var(--accent-teal); }
+.slot-btn:active { transform: scale(0.97); }
 .slot-btn.selected { border-color: var(--accent-amber); background: rgba(232,163,61,0.12); }
 
 .empty-state { color: var(--text-muted); font-size: 0.9rem; padding: 1.5rem 0; }
@@ -505,3 +529,138 @@ textarea { resize: vertical; }
   .app-sidebar .wordmark { display: none; }
   .app-main { padding: 1.5rem; }
 }
+
+/* ===================================================
+   Accessibility: skip link
+=================================================== */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  background: var(--accent-amber);
+  color: var(--bg-ink);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius);
+  text-decoration: none;
+  font-weight: 500;
+  z-index: 200;
+  transition: top var(--duration-fast) var(--ease-out);
+}
+.skip-link:focus { top: 1rem; }
+
+/* ===================================================
+   Skeleton loaders — shown while data is fetched.
+   Frequency: occasional (page load, refresh), so a
+   standard, unobtrusive shimmer is appropriate.
+=================================================== */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-panel-raised);
+  border-radius: var(--radius);
+  isolation: isolate;
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(243,238,228,0.06), transparent);
+  animation: skeleton-sweep 1.6s var(--ease-in-out) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after { animation: skeleton-pulse 1.6s ease-in-out infinite; transform: none; }
+}
+@keyframes skeleton-sweep { to { transform: translateX(100%); } }
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.skeleton-line { height: 0.9em; margin: 0.35rem 0; }
+.skeleton-line.w-60 { width: 60%; }
+.skeleton-line.w-40 { width: 40%; }
+.skeleton-line.w-80 { width: 80%; }
+
+.skeleton-row { display: flex; gap: 0.75rem; padding: 0.7rem 0.6rem; border-bottom: 1px solid var(--border); align-items: center; }
+.skeleton-row .skeleton { flex: 1; height: 1em; }
+
+.skeleton-card { padding: 1.25rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-panel); }
+.skeleton-card .skeleton { margin-bottom: 0.6rem; }
+.skeleton-card .skeleton:last-child { margin-bottom: 0; }
+
+/* ===================================================
+   Scroll reveal — landing page sections fade/lift into
+   view once, the first time they're seen. Occasional-
+   /first-time frequency, so standard motion is fine.
+=================================================== */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity var(--duration-slow) var(--ease-out), transform var(--duration-slow) var(--ease-out);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* Stagger children of a revealed group (cards, timeline steps) */
+.reveal-group.is-visible > * {
+  animation: reveal-stagger var(--duration-slow) var(--ease-out) both;
+}
+.reveal-group.is-visible > *:nth-child(1) { animation-delay: 0ms; }
+.reveal-group.is-visible > *:nth-child(2) { animation-delay: 60ms; }
+.reveal-group.is-visible > *:nth-child(3) { animation-delay: 120ms; }
+.reveal-group.is-visible > *:nth-child(4) { animation-delay: 180ms; }
+.reveal-group.is-visible > *:nth-child(5) { animation-delay: 240ms; }
+.reveal-group.is-visible > *:nth-child(6) { animation-delay: 300ms; }
+@keyframes reveal-stagger {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-group.is-visible > * { animation: none; opacity: 1; transform: none; }
+}
+
+/* ===================================================
+   Terms/Privacy consent (signup)
+=================================================== */
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.consent-row input[type="checkbox"] {
+  margin-top: 0.2rem;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-amber);
+  flex-shrink: 0;
+}
+.consent-row a { color: var(--accent-teal); }
+
+/* ===================================================
+   Legal pages (privacy / terms)
+=================================================== */
+.legal-doc { max-width: 760px; margin: 0 auto; padding: 4rem 1.5rem 6rem; }
+.legal-doc h1 { margin-bottom: 0.5rem; }
+.legal-doc .legal-updated { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 2.5rem; }
+.legal-doc h2 { font-size: 1.25rem; margin-top: 2.25rem; margin-bottom: 0.75rem; }
+.legal-doc p, .legal-doc li { color: var(--text-muted); font-size: 0.96rem; line-height: 1.7; }
+.legal-doc ul { padding-left: 1.25rem; }
+.legal-doc a { color: var(--accent-teal); }

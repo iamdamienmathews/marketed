@@ -280,8 +280,126 @@ access open; most of it is double-checking the redirect URI matches exactly.
   adapters on day one. Start with whichever 1–2 channels your first
   handful of clients actually use, and lean on the webhook adapter for
   everything else until it's worth the platform-specific setup.
-- **Legal**: terms of service, privacy policy, and a cookie notice aren't
-  included — you'll want a lawyer or a template service for those before
-  taking real payment information (this build doesn't handle payments at
-  all; that's a distinct integration — Stripe is the standard choice —
-  worth a dedicated follow-up build when you're ready).
+- **Legal**: `/terms.html` and `/privacy.html` are real, usable drafts
+  covering the platform's actual data flows (accounts, bookings, channel
+  credentials, third-party integrations) — but they're not a substitute
+  for review by a lawyer, especially before you take real payment
+  information (this build doesn't handle payments at all; that's a
+  distinct integration — Stripe is the standard choice — worth a
+  dedicated follow-up build when you're ready). Section 12 of the Terms
+  ("Governing law") is explicitly left as a placeholder for your actual
+  jurisdiction.
+- **ADA/accessibility**: this update adds skip-links, landmark regions,
+  visible focus states, a warm palette re-checked for contrast, and
+  screen-reader-friendly loading states. That's a genuine, substantial
+  pass — but "fully ADA compliant" in the legal sense usually means a
+  WCAG audit by a specialist, especially once you add more complex
+  interactions. Treat this as a strong foundation, not a compliance
+  certificate.
+- **DDoS protection**: the rate limiting added here (`express-rate-limit`)
+  stops a single client from hammering your app or brute-forcing logins.
+  It does not stop a distributed, multi-IP attack at the network level —
+  that's what a service like Cloudflare (in front of Railway) or your
+  host's own edge protection is for. Worth adding if this becomes a
+  target, not urgent for a new site with low traffic.
+
+---
+
+## Part 5 — Push this update to GitHub
+
+You already have a repo connected
+(`https://github.com/iamdamienmathews/marketed`), so this is a normal
+update — not a first-time setup. **Pushing code never touches your
+Railway environment variables or your live database** — they live
+entirely outside git (env vars are set in Railway's dashboard; your
+database lives on your mounted Volume) — so this is safe to do without
+risk to either, as long as you don't manually delete the Volume or the
+Railway service itself.
+
+### One thing worth knowing first
+
+While preparing this update, two SQLite database files
+(`data/vantage.db`, `data/sessions.db`) and a leftover `database.sqlite`
+were found **already committed to your git history**. These contain real
+data — user records, encrypted channel credentials, session data — and
+shouldn't be in version control. This update removes them from tracking
+going forward (they're now in `.gitignore`), but **they still exist in
+your repo's old commit history** on GitHub. You have two options:
+
+**Option A — simplest, keeps history.** Just push normally (steps below).
+The files stop being tracked from this point forward, but old commits
+containing them remain on GitHub. Fine if your repo is private and you
+trust everyone with access to it.
+
+**Option B — recommended if your repo is public, or you want a clean
+slate.** Since you mentioned you're fine fully replacing the repo, this
+removes the leaked data from history entirely by starting fresh:
+
+```bash
+# Inside the updated project folder from this zip:
+rm -rf .git
+git init
+git add -A
+git commit -m "Marketed. platform — clean history"
+git branch -M main
+git remote add origin https://github.com/iamdamienmathews/marketed.git
+git push --force origin main
+```
+
+### Option A steps (normal push, keeps history)
+
+1. Unzip this update, replacing your local project folder (keep your
+   local `.env` — it's already excluded from the zip and from git; don't
+   overwrite it with `.env.example`).
+2. From inside the project folder:
+   ```bash
+   git status
+   git add -A
+   git commit -m "Warm palette, skeleton loaders, legal pages, rate limiting, ADA pass, landing animations"
+   git push origin main
+   ```
+3. On Railway, trigger a redeploy (it may auto-deploy on push if you've
+   connected the GitHub repo directly; otherwise redeploy manually from
+   the Railway dashboard).
+4. **Run `npm install` (not `npm ci`)** as part of your build — this
+   update adds `express-rate-limit` to `package.json`, and the
+   `package-lock.json` in this zip hasn't been regenerated against a real
+   npm registry (no network access in the environment this was built in).
+   `npm install` will resolve and lock it correctly; `npm ci` will fail on
+   the mismatch. If Railway's build command is set to `npm ci`, switch it
+   to `npm install` for this deploy, or delete `package-lock.json` and let
+   Railway regenerate it.
+5. Nothing else changes — your Railway environment variables and your
+   Volume-mounted database are untouched by any of this.
+
+**Time:** 10–15 minutes either way.
+
+---
+
+## Changelog — this update
+
+- Rebranded the color system from a blue-tinted "ink" palette to a warm
+  graphite + amber + sage palette — no blue or purple anywhere.
+- Added skeleton loaders (shimmer, with a static/opacity fallback under
+  `prefers-reduced-motion`) to the dashboard, booking page, and both admin
+  screens.
+- Added `/privacy.html` and `/terms.html`, linked from every page's
+  footer.
+- Signup now requires a Terms/Privacy agreement checkbox, enforced on
+  both the client and the server; acceptance is timestamped in a new
+  `terms_accepted_at` column, added via a non-destructive migration so
+  your existing database and users aren't affected.
+- Added rate limiting: a global cap across the API, plus a stricter cap
+  specifically on login/signup to slow down brute-force and scripted
+  abuse.
+- Added skip-links, `main`-landmark IDs, and screen-reader-only loading
+  announcements across every page, as part of a broader accessibility
+  pass.
+- Added scroll-reveal and staggered entrance animations to the landing
+  page's sections and cards, plus press feedback on buttons/cards/slot
+  buttons — built from the motion vocabulary in
+  `.agents/skills/emil-design-eng/` (all respect
+  `prefers-reduced-motion`, and hover effects are gated to
+  hover-capable/pointer-fine devices so nothing "sticks" on touchscreens).
+- Fixed `.gitignore`: live database files are no longer tracked in git,
+  and `README.md`/`.env.example` are no longer (accidentally) ignored.

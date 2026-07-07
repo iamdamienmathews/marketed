@@ -46,3 +46,39 @@ async function logout() {
   await api('/api/auth/logout', { method: 'POST' });
   window.location.href = '/index.html';
 }
+
+// --- Skeleton loader helpers ---
+// Used as the initial content of any container while its real data is
+// being fetched. aria-hidden + a visually-hidden "Loading" label keeps
+// screen readers from reading out placeholder shapes while still
+// announcing that content is on its way.
+function skeletonRows(count = 3) {
+  return `
+    <div aria-hidden="true">
+      ${Array.from({ length: count }).map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton" style="width:28%"></div>
+          <div class="skeleton" style="width:18%"></div>
+          <div class="skeleton" style="width:22%"></div>
+          <div class="skeleton" style="width:14%"></div>
+        </div>
+      `).join('')}
+    </div>
+    <span class="visually-hidden" role="status">Loading…</span>
+  `;
+}
+
+function skeletonCards(count = 3) {
+  return `
+    <div class="card-grid" aria-hidden="true">
+      ${Array.from({ length: count }).map(() => `
+        <div class="skeleton-card">
+          <div class="skeleton skeleton-line w-60"></div>
+          <div class="skeleton skeleton-line w-80"></div>
+          <div class="skeleton skeleton-line w-40"></div>
+        </div>
+      `).join('')}
+    </div>
+    <span class="visually-hidden" role="status">Loading…</span>
+  `;
+}

@@ -12,6 +12,8 @@
 </head>
 <body>
 
+<a href="#top" class="skip-link">Skip to main content</a>
+
 <header class="nav">
   <div class="nav-inner">
     <a href="#top" class="wordmark">Marketed.</a>
@@ -64,18 +66,18 @@
   </section>
 
   <!-- PROBLEM -->
-  <section class="problem">
+  <section class="problem reveal">
     <p class="eyebrow">The problem</p>
     <h2>Five logins. Five different stories about your funnel.</h2>
     <p class="section-copy">Your ad platform says the campaign is working. Your email tool disagrees. Nobody's numbers line up, because nobody's numbers are looking at the same funnel. You end up managing tools instead of managing growth.</p>
   </section>
 
   <!-- SERVICES -->
-  <section id="services" class="services">
+  <section id="services" class="services reveal">
     <p class="eyebrow">What we run</p>
     <h2>Every channel your funnel needs. Priced plainly.</h2>
 
-    <div class="card-grid">
+    <div class="card-grid reveal-group">
       <article class="card">
         <h3>PPC / Search Ads</h3>
         <p>Search and social ad campaigns across Google, Meta, TikTok, and LinkedIn, built around your actual cost-per-click targets.</p>
@@ -115,11 +117,11 @@
   </section>
 
   <!-- PACKAGES -->
-  <section id="packages" class="packages">
+  <section id="packages" class="packages reveal">
     <p class="eyebrow">Bundled together</p>
     <h2>Packages that usually come hand-in-hand.</h2>
 
-    <div class="card-grid">
+    <div class="card-grid reveal-group">
       <article class="card card-package">
         <h3>Website + Retargeting</h3>
         <p>Your site, built and optimized, plus a retargeting layer to catch visitors who leave without converting.</p>
@@ -141,11 +143,11 @@
   </section>
 
   <!-- PROCESS -->
-  <section id="process" class="process">
+  <section id="process" class="process reveal">
     <p class="eyebrow">How it works</p>
     <h2>From first call to live dashboard.</h2>
 
-    <ol class="timeline">
+    <ol class="timeline reveal-group">
       <li><span class="step-num mono">01</span><div><h4>Lead capture</h4><p>Book a discovery call — we learn your goals, budget, and current channels.</p></div></li>
       <li><span class="step-num mono">02</span><div><h4>Proposal</h4><p>We match your goals to a package and send a clear, itemized quote.</p></div></li>
       <li><span class="step-num mono">03</span><div><h4>Onboarding</h4><p>Quick intake form, account access, and a kickoff call to confirm KPIs.</p></div></li>
@@ -156,7 +158,7 @@
   </section>
 
   <!-- CONTACT -->
-  <section id="contact" class="contact">
+  <section id="contact" class="contact reveal">
     <div class="contact-intro">
       <p class="eyebrow">Get started</p>
       <h2>Book your discovery call.</h2>
@@ -231,9 +233,14 @@
 
 <footer class="footer">
   <p>Marketed. — one dashboard for your entire funnel.</p>
-  <p class="footer-meta">&copy; <span id="year"></span> Marketed. All rights reserved.</p>
+  <p class="footer-meta">
+    &copy; <span id="year"></span> Marketed. All rights reserved. ·
+    <a href="/privacy.html">Privacy Policy</a> ·
+    <a href="/terms.html">Terms of Service</a>
+  </p>
 </footer>
 
+<script src="reveal.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

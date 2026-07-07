@@ -1,4 +1,7 @@
 .env
-.env.example
-README.md
-node_modules
+node_modules/
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+database.sqlite

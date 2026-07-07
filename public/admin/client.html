@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="app-shell">
   <aside class="app-sidebar">
     <a href="/index.html" class="wordmark">Marketed.</a>
@@ -15,7 +16,7 @@
     <div class="sidebar-footer"><a href="#" id="logout-link">Log out</a></div>
   </aside>
 
-  <main class="app-main">
+  <main class="app-main" id="main-content">
     <h1 id="client-name">Loading…</h1>
     <p class="page-sub" id="client-meta"></p>
 
@@ -33,7 +34,7 @@
         </div>
         <button class="btn btn-primary btn-sm" id="assign-btn">Assign</button>
       </div>
-      <div id="services-table" style="margin-top:1rem;"></div>
+      <div id="services-table" style="margin-top:1rem;"><div aria-hidden="true"><div class="skeleton-row"><div class="skeleton" style="width:28%"></div><div class="skeleton" style="width:18%"></div><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:14%"></div></div><div class="skeleton-row"><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:26%"></div><div class="skeleton" style="width:16%"></div><div class="skeleton" style="width:20%"></div></div></div><span class="visually-hidden" role="status">Loading…</span></div>
     </div>
 
     <div class="panel">
@@ -58,7 +59,7 @@
         </div>
         <button class="btn btn-primary btn-sm" id="add-channel-btn">Add &amp; sync</button>
       </div>
-      <div id="channels-table" style="margin-top:1rem;"></div>
+      <div id="channels-table" style="margin-top:1rem;"><div aria-hidden="true"><div class="skeleton-row"><div class="skeleton" style="width:28%"></div><div class="skeleton" style="width:18%"></div><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:14%"></div></div><div class="skeleton-row"><div class="skeleton" style="width:22%"></div><div class="skeleton" style="width:26%"></div><div class="skeleton" style="width:16%"></div><div class="skeleton" style="width:20%"></div></div></div><span class="visually-hidden" role="status">Loading…</span></div>
     </div>
 
     <div class="panel">
@@ -130,7 +131,7 @@ async function loadClient() {
           <tr>
             <td>${escapeHTML(c.channel_type)}</td>
             <td>${escapeHTML(c.label)}</td>
-            <td>${badge(c.status)}${c.last_error ? `<div style="color:#E07A5F;font-size:0.75rem;margin-top:0.2rem;">${escapeHTML(c.last_error)}</div>` : ''}</td>
+            <td>${badge(c.status)}${c.last_error ? `<div style="color:var(--accent-danger);font-size:0.75rem;margin-top:0.2rem;">${escapeHTML(c.last_error)}</div>` : ''}</td>
             <td>${fmtDate(c.last_synced_at)}</td>
             <td><button class="btn btn-ghost btn-sm" data-sync="${c.id}">Sync now</button> <button class="btn btn-danger btn-sm" data-remove-channel="${c.id}">Remove</button></td>
           </tr>

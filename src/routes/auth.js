@@ -15,12 +15,13 @@ const router = express.Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 router.post('/signup', async (req, res) => {
-  const { name, email, password, company, phone } = req.body;
+  const { name, email, password, company, phone, agreedToTerms } = req.body;
   const errors = [];
 
   if (!name || name.trim().length < 2) errors.push('Enter your full name.');
   if (!email || !EMAIL_RE.test(email.trim())) errors.push('Enter a valid email address.');
   if (!password || password.length < 8) errors.push('Password must be at least 8 characters.');
+  if (!agreedToTerms) errors.push('You must agree to the Terms of Service and Privacy Policy to create an account.');
   if (errors.length) return res.status(400).json({ ok: false, errors });
 
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.trim().toLowerCase());
@@ -30,8 +31,8 @@ router.post('/signup', async (req, res) => {
   const passwordHash = await bcrypt.hash(password, 12);
 
   db.prepare(
-    `INSERT INTO users (id, role, name, email, password_hash, company, phone)
-     VALUES (?, 'client', ?, ?, ?, ?, ?)`
+    `INSERT INTO users (id, role, name, email, password_hash, company, phone, terms_accepted_at)
+     VALUES (?, 'client', ?, ?, ?, ?, ?, datetime('now'))`
   ).run(id, name.trim(), email.trim().toLowerCase(), passwordHash, company || null, phone || null);
 
   req.session.userId = id;

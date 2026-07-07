@@ -25,5 +25,18 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf-8');
 db.exec(schema);
 
+// --- Lightweight migrations ---
+// CREATE TABLE IF NOT EXISTS (above) only helps fresh databases. Existing
+// databases (like the one already running in production) need columns
+// added after the fact. Each block below is a no-op if the column
+// already exists, and never touches existing rows/data.
+function columnExists(table, column) {
+  return db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === column);
+}
+
+if (!columnExists('users', 'terms_accepted_at')) {
+  db.exec(`ALTER TABLE users ADD COLUMN terms_accepted_at TEXT`);
+}
+
 module.exports = db;
 

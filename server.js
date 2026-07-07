@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
 const db = require('./src/db'); // ensures schema is created on boot
@@ -16,6 +17,32 @@ const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : pat
 
 app.set('trust proxy', 1);
 app.use(express.json());
+
+// --- Rate limiting ---
+// This mitigates application-level abuse (credential stuffing, scripted
+// signup/lead spam, hammering the API). It does NOT replace network-level
+// DDoS protection — for that, put the app behind Cloudflare or rely on
+// your host's edge protections (Railway includes some by default). This
+// stops a single client from overwhelming the app itself.
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300, // requests per IP per window across the whole API
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, errors: ['Too many requests. Please slow down and try again shortly.'] },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20, // login/signup attempts per IP per window — brute-force/credential-stuffing guard
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, errors: ['Too many attempts. Please wait a few minutes and try again.'] },
+});
+
+app.use('/api', globalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/signup', authLimiter);
 
 app.use(
   session({
